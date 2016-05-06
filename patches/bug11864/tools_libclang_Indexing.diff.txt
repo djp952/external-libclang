@@ -1,0 +1,26 @@
+Clang Bug 11864
+Produced: 5/6/2016 2:00:26 PM
+
+Mode:  Differences, With Context
+Left file: D:\llvm\llvm-3.8.0.src\cfe-3.8.0.src\tools\libclang\Indexing.cpp
+Right file: D:\llvm\llvm-3.8.0.src\tools\clang\tools\libclang\Indexing.cpp
+569   // Make sure to use the raw module format.                               =  569   // Make sure to use the raw module format.
+570   CInvok->getHeaderSearchOpts().ModuleFormat =                                570   CInvok->getHeaderSearchOpts().ModuleFormat =
+571     CXXIdx->getPCHContainerOperations()->getRawReader().getFormat();          571     CXXIdx->getPCHContainerOperations()->getRawReader().getFormat();
+572                                                                               572
+573   ASTUnit *Unit = ASTUnit::create(CInvok.get(), Diags, CaptureDiagnostics,    573   ASTUnit *Unit = ASTUnit::create(CInvok.get(), Diags, CaptureDiagnostics,
+574                                   /*UserFilesAreVolatile=*/true);             574                                   /*UserFilesAreVolatile=*/true);
+------------------------------------------------------------------------
+                                                                               -+ 575
+                                                                                  576   // Prevent double release of the unsaved files owned by BufOwner
+                                                                                  577   // (https://llvm.org/bugs/show_bug.cgi?id=11864)
+                                                                                  578   Unit->setOwnsRemappedFileBuffers(false);
+                                                                                  579
+------------------------------------------------------------------------
+575   if (!Unit)                                                               =  580   if (!Unit)
+576     return CXError_InvalidArguments;                                          581     return CXError_InvalidArguments;
+577                                                                               582
+578   std::unique_ptr<CXTUOwner> CXTU(                                            583   std::unique_ptr<CXTUOwner> CXTU(
+579       new CXTUOwner(MakeCXTranslationUnit(CXXIdx, Unit)));                    584       new CXTUOwner(MakeCXTranslationUnit(CXXIdx, Unit)));
+580                                                                               585
+------------------------------------------------------------------------
